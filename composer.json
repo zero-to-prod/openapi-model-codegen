@@ -1,0 +1,47 @@
+{
+    "name": "zero-to-prod/openapi-model-codegen",
+    "description": "Simple, extensible, typesafe DTOs.",
+    "keywords": [
+        "openapi model codegen",
+        "open api model codegen",
+        "swagger model codegen",
+        "openapi codegen",
+        "openapi models",
+        "openapi dto",
+        "zero-to-prod"
+    ],
+    "homepage": "https://github.com/zero-to-prod/openapi-model-codegen",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "David Smith",
+            "email": "dave0016@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "zero-to-prod/service-model": "^1.1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Zerotoprod\\ModelCodegen\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Zerotoprod\\ModelCodegen\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require-dev": {
+        "pestphp/pest": "^2.19",
+        "larapack/dd": "^1.1"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}
