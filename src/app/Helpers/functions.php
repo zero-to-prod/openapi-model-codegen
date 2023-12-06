@@ -3,7 +3,8 @@
 use Illuminate\Container\Container;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Facade;
+use Illuminate\Support\Facades\File;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\Engines\CompilerEngine;
 use Illuminate\View\Engines\EngineResolver;
@@ -87,35 +88,39 @@ if (!function_exists('generate')) {
     function generate(array $schemas, string $save_path, ?string $namespace): void
     {
         $schema_collection = collect($schemas);
+        Facade::setFacadeApplication(tap(new Container, fn(Container $Container) => $Container->bind('files', fn() => new Filesystem)));
+        File::ensureDirectoryExists($save_path);
 
-        $schema_collection->filter(fn(array $schema) => isset($schema['enum']))
-            ->reduce(fn(Collection $enums, array $schema, string $key) => $enums->push(
-                EnumDto::make([
-                    EnumDto::classname => $key,
-                    EnumDto::values => $schema['enum'],
-                ])), initial: collect())
-            ?->each(fn(EnumDto $EnumDto) => file_put_contents(
-                filename: $EnumDto->toFilename($save_path),
-                data: EnumController::make(
+        foreach ($schema_collection->filter(fn(array $schema) => isset($schema['enum'])) as $key => $schema) {
+            $enumDto = EnumDto::make([
+                EnumDto::classname => $key,
+                EnumDto::values => $schema['enum'],
+            ]);
+
+            File::put(
+                $enumDto->toFilename($save_path),
+                EnumController::make(
                     namespace: $namespace,
-                    classname: $EnumDto->classname,
-                    values: $EnumDto->values
+                    classname: $enumDto->classname,
+                    values: $enumDto->values
                 )->render()
-            ));
+            );
+        }
 
-        $schema_collection->filter(fn(array $schema) => $schema['type'] === 'object' && isset($schema['properties']))
-            ->reduce(fn(Collection $enums, array $schema, string $key) => $enums->push(
-                ClassDto::make([
-                    ClassDto::classname => $key,
-                    ClassDto::properties => $schema['properties'],
-                ])), initial: collect())
-            ?->each(fn(ClassDto $ClassDto) => file_put_contents(
-                filename: $ClassDto->toFilename($save_path),
-                data: ClassController::make(
-                    classname: $ClassDto->classname,
-                    properties: $ClassDto->properties,
+        foreach ($schema_collection->filter(fn(array $schema) => $schema['type'] === 'object' && isset($schema['properties'])) as $key => $schema) {
+            $classDto = ClassDto::make([
+                ClassDto::classname => $key,
+                ClassDto::properties => $schema['properties'],
+            ]);
+
+            File::put(
+                $classDto->toFilename($save_path),
+                ClassController::make(
+                    classname: $classDto->classname,
+                    properties: $classDto->properties,
                     namespace: $namespace
                 )->render()
-            ));
+            );
+        }
     }
 }
