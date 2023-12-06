@@ -39,7 +39,18 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function validate_view(string $subject)
 {
-    // ..
+    return file_put_contents(
+        filename: tap(
+            tempnam(sys_get_temp_dir(), 'tmp'),
+            function (string $filename) {
+                $output = [];
+                $return_var = 0;
+                exec("php -l " . $filename, $output, $return_var);
+
+                return expect($return_var)->toBe(0, implode("\n", $output));
+            }),
+        data: $subject
+    );
 }

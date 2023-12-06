@@ -20,13 +20,20 @@
         }
     ],
     "require": {
+        "illuminate/events": "^10.0",
+        "illuminate/filesystem": "^10.0",
+        "illuminate/view": "^10.0",
+        "larapack/dd": "^1.1",
         "php": "^8.1",
-        "zero-to-prod/service-model": "^1.1.0"
+        "zero-to-prod/service-model": "^1.3.0"
     },
     "autoload": {
         "psr-4": {
-            "Zerotoprod\\ModelCodegen\\": "src/"
-        }
+            "Zerotoprod\\ModelCodegen\\": "src/app"
+        },
+        "files": [
+            "src/app/Helpers/functions.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
@@ -36,8 +43,8 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require-dev": {
-        "pestphp/pest": "^2.19",
-        "larapack/dd": "^1.1"
+        "roave/security-advisories": "dev-latest",
+        "pestphp/pest": "^2.19"
     },
     "config": {
         "allow-plugins": {
