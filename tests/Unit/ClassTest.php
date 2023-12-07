@@ -74,6 +74,7 @@ test('enum', function () {
 
 test('native type', function () {
     $ClassController = ClassController::make(
+        schema:[],
         classname: 'Order',
         properties: [
             'amount' => [
@@ -100,6 +101,7 @@ test('native type', function () {
 
 test('prevent optional mixed type', function () {
     $ClassController = ClassController::make(
+        schema:[],
         classname: 'Order',
         properties: [
             'amount' => [

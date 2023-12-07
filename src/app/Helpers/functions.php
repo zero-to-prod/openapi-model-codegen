@@ -3,8 +3,6 @@
 use Illuminate\Container\Container;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Facade;
-use Illuminate\Support\Facades\File;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\Engines\CompilerEngine;
 use Illuminate\View\Engines\EngineResolver;
@@ -88,8 +86,9 @@ if (!function_exists('generate')) {
     function generate(array $schemas, string $save_path, ?string $namespace): void
     {
         $schema_collection = collect($schemas);
-        Facade::setFacadeApplication(tap(new Container, fn(Container $Container) => $Container->bind('files', fn() => new Filesystem)));
-        File::ensureDirectoryExists($save_path);
+        if (!is_dir($save_path) && !mkdir($save_path, 0777, true) && !is_dir($save_path)) {
+            throw new RuntimeException(sprintf('Directory "%s" was not created', $save_path));
+        }
 
         foreach ($schema_collection->filter(fn(array $schema) => isset($schema['enum'])) as $key => $schema) {
             $enumDto = EnumDto::make([
@@ -97,7 +96,7 @@ if (!function_exists('generate')) {
                 EnumDto::values => $schema['enum'],
             ]);
 
-            File::put(
+            file_put_contents(
                 $enumDto->toFilename($save_path),
                 EnumController::make(
                     namespace: $namespace,
@@ -107,20 +106,26 @@ if (!function_exists('generate')) {
             );
         }
 
-        foreach ($schema_collection->filter(fn(array $schema) => $schema['type'] === 'object' && isset($schema['properties'])) as $key => $schema) {
+        $classes = $schema_collection
+            ->filter(fn(array $schema) => ($schema['type'] === 'object' && isset($schema['properties']))
+                || ($schema['type'] === 'array' && isset($schema['items'])));
+
+        foreach ($classes as $key => $schema) {
             $classDto = ClassDto::make([
                 ClassDto::classname => $key,
-                ClassDto::properties => $schema['properties'],
+                ClassDto::properties => $schema['properties'] ?? $schema['items']
             ]);
 
-            File::put(
+            file_put_contents(
                 $classDto->toFilename($save_path),
                 ClassController::make(
+                    schema: $classes->toArray(),
                     classname: $classDto->classname,
                     properties: $classDto->properties,
                     namespace: $namespace
                 )->render()
             );
         }
+        echo 'Completed in: ' . getrusage()["ru_utime.tv_usec"] . ' mirco seconds.';
     }
 }
