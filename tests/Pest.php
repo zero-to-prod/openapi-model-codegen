@@ -54,3 +54,12 @@ function validate_view(string $subject)
         data: $subject
     );
 }
+
+function validate_file(string $filename)
+{
+    $output = [];
+    $return_var = 0;
+    exec("php -l " . $filename, $output, $return_var);
+
+    return expect($return_var)->toBe(0, implode("\n", $output));
+}

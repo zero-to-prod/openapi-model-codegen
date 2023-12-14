@@ -20,6 +20,10 @@ class Property
     public const ref_classname = 'ref_classname';
     public const name = 'name';
     public const template = 'template';
+    public const comment = 'comment';
+    public const default_value = 'default_value';
+    public const value = 'value';
+    public const doc_block_value = 'doc_block_value';
 
     public readonly Visibility $visibility;
     public readonly ?bool $readonly;
@@ -29,4 +33,8 @@ class Property
     #[Cast(ToIdentifier::class)]
     public readonly string $name;
     public readonly Template $template;
+    public readonly ?string $comment;
+    public readonly ?string $default_value;
+    public readonly ?string $value;
+    public readonly ?string $doc_block_value;
 }

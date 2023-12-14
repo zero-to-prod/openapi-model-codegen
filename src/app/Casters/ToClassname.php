@@ -11,6 +11,7 @@ class ToClassname implements CanCast
         if (!$value) {
             return null;
         }
+
         return ucfirst(to_valid_identifier($value[0]));
     }
 }

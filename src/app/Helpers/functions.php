@@ -3,8 +3,6 @@
 use Illuminate\Container\Container;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Facade;
-use Illuminate\Support\Facades\File;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\Engines\CompilerEngine;
 use Illuminate\View\Engines\EngineResolver;
@@ -14,6 +12,7 @@ use Zerotoprod\ModelCodegen\Generators\Enums\EnumController;
 use Zerotoprod\ModelCodegen\Generators\Models\ClassController;
 use Zerotoprod\ModelCodegen\Models\ClassDto;
 use Zerotoprod\ModelCodegen\Models\EnumDto;
+use Zerotoprod\ModelCodegen\Parser\V3\Schema;
 
 if (!function_exists('view')) {
     function view($view, array $variables = [], array|string $view_paths = []): string
@@ -85,42 +84,69 @@ if (!function_exists('path_to_namespace')) {
 }
 
 if (!function_exists('generate')) {
-    function generate(array $schemas, string $save_path, ?string $namespace): void
+    /**
+     * @param string $document
+     * @param string $save_path
+     * @param string|null $namespace
+     * @return void
+     */
+    function generate(string $document, string $save_path, ?string $namespace): void
     {
-        $schema_collection = collect($schemas);
-        Facade::setFacadeApplication(tap(new Container, fn(Container $Container) => $Container->bind('files', fn() => new Filesystem)));
-        File::ensureDirectoryExists($save_path);
-
-        foreach ($schema_collection->filter(fn(array $schema) => isset($schema['enum'])) as $key => $schema) {
-            $enumDto = EnumDto::make([
-                EnumDto::classname => $key,
-                EnumDto::values => $schema['enum'],
-            ]);
-
-            File::put(
-                $enumDto->toFilename($save_path),
-                EnumController::make(
-                    namespace: $namespace,
-                    classname: $enumDto->classname,
-                    values: $enumDto->values
-                )->render()
-            );
+        $schema_collection = collect(json_decode($document, true)['components']['schemas']);
+        if (!is_dir($save_path) && !mkdir($save_path, 0777, true) && !is_dir($save_path)) {
+            throw new RuntimeException(sprintf('Directory "%s" was not created', $save_path));
         }
 
-        foreach ($schema_collection->filter(fn(array $schema) => $schema['type'] === 'object' && isset($schema['properties'])) as $key => $schema) {
+        foreach ($schema_collection->filter(fn(array $schema) => isset($schema['properties'])) as $key => $schema) {
+            foreach ($schema['properties'] as $property => $value) {
+                if (isset($value['enum'])) {
+                    $enumDto = EnumDto::make([
+                        EnumDto::classname => $property,
+                        EnumDto::values => $value['enum'],
+                    ]);
+
+                    $data = EnumController::make(
+                        namespace: $namespace,
+                        classname: $enumDto->classname,
+                        values: $enumDto->values
+                    )->render();
+
+                    if ($data) {
+                        file_put_contents($enumDto->toFilename($save_path), $data);
+                    }
+                }
+                if (isset($value['items']['enum'])) {
+                    $enumDto = EnumDto::make([
+                        EnumDto::classname => $property,
+                        EnumDto::values => $value['items']['enum'],
+                    ]);
+
+                    $data = EnumController::make(
+                        namespace: $namespace,
+                        classname: $enumDto->classname,
+                        values: $enumDto->values
+                    )->render();
+
+                    if ($data) {
+                        file_put_contents($enumDto->toFilename($save_path), $data);
+                    }
+                }
+            }
             $classDto = ClassDto::make([
                 ClassDto::classname => $key,
-                ClassDto::properties => $schema['properties'],
+                ClassDto::properties => Schema::make($schema)->properties,
             ]);
 
-            File::put(
-                $classDto->toFilename($save_path),
-                ClassController::make(
-                    classname: $classDto->classname,
-                    properties: $classDto->properties,
-                    namespace: $namespace
-                )->render()
-            );
+            $data = ClassController::make(
+                schema: $schema_collection->toArray(),
+                classname: $classDto->classname,
+                properties: $classDto->properties,
+                namespace: $namespace
+            )->render();
+
+            if ($data) {
+                file_put_contents($classDto->toFilename($save_path), $data);
+            }
         }
     }
 }
