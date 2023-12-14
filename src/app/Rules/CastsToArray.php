@@ -2,6 +2,8 @@
 
 namespace Zerotoprod\ModelCodegen\Rules;
 
+use Zerotoprod\ModelCodegen\Parser\V3\Reference;
+use Zerotoprod\ModelCodegen\Parser\V3\Schema;
 use Zerotoprod\ModelCodegen\Support\EvaluatesRule;
 
 /**
@@ -11,10 +13,19 @@ class CastsToArray
 {
     use EvaluatesRule;
 
-    public function handle(array $openapi_schema): bool
+    /**
+     * @param Schema[] $openapi_schema
+     * @return bool
+     */
+    public function handle(array|Reference $openapi_schema): bool
     {
         return collect($openapi_schema)
-            ->contains(fn($property) => isset($property['type'], $property['items']['$ref']) && $property['type'] === 'array');
+            ->contains(function (Schema|Reference $property) {
+                if ($property instanceof Reference) {
+                    return true;
+                }
+                return isset($property->type, $property->items['$ref']->_ref) && $property->type === 'array';
+            });
     }
 
 }

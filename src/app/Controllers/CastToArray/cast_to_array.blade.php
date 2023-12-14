@@ -2,6 +2,12 @@
     use Zerotoprod\ModelCodegen\Models\Property;
     /* @var Property $Property */
 @endphp
-    /* @var {{$Property->ref_classname}}[] ${{$Property->name}} */
+    /**
+@isset($Property->comment)
+     * {{$Property->comment}}
+     *
+@endisset
+     * @var {{$Property->doc_block_value}}
+     */
     #[CastToArray({{$Property->ref_classname}}::class)]
-    {{$Property->visibility->value}} {{$Property->readonly ? 'readonly' : null}} {{implode('|', $Property->declarations)}} ${{$Property->name}};
+    {{$Property->value}};

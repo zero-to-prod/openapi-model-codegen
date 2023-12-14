@@ -1,0 +1,17 @@
+#!/bin/bash
+DEFAULT_OUTPUT_DIR="./generated/ServiceModels"
+DEFAULT_NAMESPACE="ServiceModels"
+
+read -r -p "Url or path to the OpenAPI document:" API_ENDPOINT
+read -r -p "Path to the generated files? (default ${DEFAULT_OUTPUT_DIR}) " OUTPUT_DIR
+read -r -p "Model namespace: (default: ${DEFAULT_NAMESPACE}) " MODEL_NAMESPACE
+
+if [[ -z "${OUTPUT_DIR}" ]]; then
+	OUTPUT_DIR="${DEFAULT_OUTPUT_DIR}"
+fi
+
+if [[ -z "${MODEL_NAMESPACE}" ]]; then
+	MODEL_NAMESPACE="${DEFAULT_NAMESPACE}"
+fi
+
+php ./vendor/zero-to-prod/openapi-model-codegen/generate.php "${API_ENDPOINT}" "${OUTPUT_DIR}" "${MODEL_NAMESPACE}"
